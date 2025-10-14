@@ -2,10 +2,16 @@ numpy~=2.0
 pandas~=2.2
 scikit-learn~=1.5
 matplotlib~=3.9
+fastapi~=0.114
+uvicorn[standard]~=0.30
 flask~=3.0
-scapy~=2.5
+pydantic~=2.9
+rich~=13.7
 onnx~=1.16
 onnxruntime~=1.18
-uvicorn~=0.30
-fastapi~=0.114   # if you switch to FastAPI
-# torch/torchvision: install per your OS instructions
+requests~=2.32
+# scapy is optional but useful for pcaps
+scapy~=2.5
+
+# PyTorch: install per your platform
+torch
