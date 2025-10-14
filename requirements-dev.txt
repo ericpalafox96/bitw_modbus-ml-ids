@@ -1,0 +1,11 @@
+numpy~=2.0
+pandas~=2.2
+scikit-learn~=1.5
+matplotlib~=3.9
+flask~=3.0
+scapy~=2.5
+onnx~=1.16
+onnxruntime~=1.18
+uvicorn~=0.30
+fastapi~=0.114   # if you switch to FastAPI
+# torch/torchvision: install per your OS instructions
