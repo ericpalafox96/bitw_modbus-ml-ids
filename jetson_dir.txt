@@ -1,0 +1,11 @@
+/data
+ ├── ML/               # trained models, weights, datasets
+ │    ├── models/
+ │    ├── datasets/
+ │    └── logs/
+ ├── code/             # Python and C++ source for your BITW app
+ │    ├── src/
+ │    ├── notebooks/
+ │    └── scripts/
+ ├── runtime/          # compiled or containerized builds
+ └── backups/          # configs, checkpoints, export archives
