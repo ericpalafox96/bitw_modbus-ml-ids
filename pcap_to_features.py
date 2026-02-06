@@ -18,7 +18,7 @@ OUT_FILE = args.out
 
 packets = rdpcap(PCAP_FILE)
 
-# Filter Modbus TCP packets
+# Filter Modbus TCP packets (port 502)
 filtered = []
 for pkt in packets:
     if pkt.haslayer(TCP):
@@ -35,12 +35,11 @@ packets = filtered
 pkt_times = np.array([float(pkt.time) for pkt in packets])
 pkt_sizes = np.array([len(pkt) for pkt in packets])
 
+# Hash payloads for replay detection
 payload_hashes = []
 for pkt in packets:
     if pkt.haslayer(Raw):
-        payload_hashes.append(
-            hashlib.md5(bytes(pkt[Raw].load)).hexdigest()
-        )
+        payload_hashes.append(hashlib.md5(bytes(pkt[Raw].load)).hexdigest())
     else:
         payload_hashes.append(None)
 
@@ -61,24 +60,58 @@ while current < end_time:
     sizes = pkt_sizes[idx]
     times = pkt_times[idx]
 
+    # Inter-arrival times
     if times.size > 1:
         inter_arrivals = np.diff(times)
     else:
         inter_arrivals = np.array([0.0])
 
+    # Duplicate payload ratio (replay signal)
     window_hashes = [payload_hashes[i] for i in idx if payload_hashes[i]]
     dup_ratio = 0.0
     if len(window_hashes) > 1:
         dup_ratio = 1.0 - (len(set(window_hashes)) / len(window_hashes))
 
+    # --- NEW: Write-based features (command injection signal) ---
+    write_count = 0
+    write_regs = set()
+
+    for i in idx:
+        pkt = packets[i]
+        if pkt.haslayer(Raw):
+            payload = bytes(pkt[Raw].load)
+
+            # Modbus/TCP: MBAP header is 7 bytes, function code is byte 7
+            if len(payload) >= 8:
+                func_code = payload[7]
+
+                # 0x06 = Write Single Register, 0x10 = Write Multiple Registers
+                if func_code in (6, 16):
+                    write_count += 1
+
+                    # Register address is next two bytes (works for 0x06 and 0x10)
+                    if len(payload) >= 10:
+                        reg = int.from_bytes(payload[8:10], byteorder="big")
+                        write_regs.add(reg)
+
+    total_pkts = int(idx.size)
+    write_ratio = write_count / total_pkts if total_pkts > 0 else 0.0
+    unique_write_regs = len(write_regs)
+    # -----------------------------------------------------------
+
     row = {
-        "packet_count": int(idx.size),
+        "packet_count": total_pkts,
         "bytes_total": int(sizes.sum()),
         "packet_size_mean": float(sizes.mean()),
         "packet_size_std": float(sizes.std()),
         "iat_mean": float(inter_arrivals.mean()),
         "iat_std": float(inter_arrivals.std()),
-        "dup_payload_ratio": dup_ratio,
+        "dup_payload_ratio": float(dup_ratio),
+
+        # NEW columns:
+        "write_ratio": float(write_ratio),
+        "unique_write_regs": int(unique_write_regs),
+
         "label": LABEL
     }
 

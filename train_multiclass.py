@@ -7,9 +7,10 @@ from sklearn.metrics import classification_report, confusion_matrix
 df_normal = pd.read_csv("features_normal.csv")
 df_timing = pd.read_csv("features_timing_attack.csv")
 df_replay = pd.read_csv("features_replay_attack.csv")
+df_command = pd.read_csv("features_command_injection.csv")
 
 # Combine
-df = pd.concat([df_normal, df_timing, df_replay], ignore_index=True)
+df = pd.concat([df_normal, df_timing, df_replay, df_command], ignore_index=True)
 
 # Separate features and labels
 X = df.drop(columns=["label"])
@@ -29,6 +30,10 @@ model = RandomForestClassifier(
     random_state=42
 )
 model.fit(X_train, y_train)
+
+importances = model.feature_importances_
+for name, val in sorted(zip(X.columns, importances), key=lambda x: -x[1]):
+    print(f"{name:25s}: {val:.3f}")
 
 # Evaluate
 y_pred = model.predict(X_test)
